@@ -136,7 +136,7 @@ int main() {
     int minCost = numeric_limits<int>::max();
     selA = 15;
 
-    loadFile("/Users/surya_v/CLionProjects/untitled/graf_30_20.txt", g);
+    loadFile("data/graf_30_20.txt", g);
 
     g.printGraph();
 
