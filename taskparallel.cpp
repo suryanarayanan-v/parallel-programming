@@ -195,7 +195,7 @@ int main() {
     selA = 15;
 
     Graph g(V);
-    loadFile("/Users/surya_v/CLionProjects/untitled/graf_30_20.txt", g);
+    loadFile("data/graf_30_20.txt", g);
 
     g.printGraph();
 
