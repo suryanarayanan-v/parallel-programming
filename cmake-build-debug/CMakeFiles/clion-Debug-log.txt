@@ -1,4 +1,0 @@
-/opt/homebrew/Cellar/cmake/3.31.6/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/Applications/CLion.app/Contents/bin/ninja/mac/aarch64/ninja -DCMAKE_C_COMPILER=/opt/homebrew/opt/llvm/bin/clang -DCMAKE_CXX_COMPILER=/opt/homebrew/opt/llvm/bin/clang++ -G Ninja -S /Users/surya_v/Developer/CTU/PDP/minEdge -B /Users/surya_v/Developer/CTU/PDP/minEdge/cmake-build-debug
--- Configuring done (0.0s)
--- Generating done (0.0s)
--- Build files have been written to: /Users/surya_v/Developer/CTU/PDP/minEdge/cmake-build-debug

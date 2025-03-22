@@ -1,3 +1,0 @@
-/Users/surya_v/Developer/CTU/PDP/minEdge/cmake-build-debug/CMakeFiles/minEdge.dir
-/Users/surya_v/Developer/CTU/PDP/minEdge/cmake-build-debug/CMakeFiles/edit_cache.dir
-/Users/surya_v/Developer/CTU/PDP/minEdge/cmake-build-debug/CMakeFiles/rebuild_cache.dir
