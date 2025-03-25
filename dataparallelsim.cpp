@@ -2,24 +2,28 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <queue>
 #include <sstream>
-#include <time.h>
 #include <limits>
 #include <omp.h>
 
 using namespace std;
 
-int selA = 5;
-int V = 10;
+int V = 30;
+int selA = 15;
+int ENOUGH_STATES = 10000;
+
+
+static int  g_bestCost  = numeric_limits<int>::max();
+static vector<int> g_bestFlags;
 
 class Graph {
     int V;
-    vector<vector<pair<int, int>>> adjList;
+    vector<vector<pair<int,int>>> adjList;
     vector<vector<int>> edgeCosts;
 
 public:
-    explicit Graph(int V) {
-        this->V = V;
+    explicit Graph(int V) : V(V) {
         adjList.resize(V);
         edgeCosts.resize(V, vector<int>(V, 0));
     }
@@ -28,28 +32,31 @@ public:
         adjList[u].emplace_back(v, w);
         edgeCosts[u][v] = w;
     }
-
+    const vector<pair<int, int>>& getEdges(int u) const {
+        return adjList[u];
+    }
+    int getEdgeCost(int u, int v) const {
+        return edgeCosts[u][v];
+    }
+    int getVertexCount() const {
+        return V;
+    }
     void printGraph() {
         for (int i = 0; i < V; ++i) {
             cout << "Vertex " << i << ":";
-            for (auto edge : adjList[i]) {
+            for (auto &edge : adjList[i]) {
                 cout << " -> (" << edge.first << ", weight: " << edge.second << ")";
             }
             cout << endl;
         }
     }
+};
 
-    [[nodiscard]] const vector<pair<int, int>>& getEdges(int u) const {
-        return adjList[u];
-    }
-
-    [[nodiscard]] int getEdgeCost(int u, int v) const {
-        return edgeCosts[u][v];
-    }
-
-    [[nodiscard]] int getVertexCount() const  {
-        return V;
-    }
+struct BnBState {
+    vector<int> flags;
+    int index;
+    int countA;
+    int cost;
 };
 
 void loadFile(const string& fileName, Graph &G) {
@@ -59,25 +66,24 @@ void loadFile(const string& fileName, Graph &G) {
         exit(1);
     }
 
-    vector<vector<int>> matrix;
     string line;
-
     getline(infile, line);
 
-    while(getline(infile, line)) {
+    vector<vector<int>> matrix;
+    while (getline(infile, line)) {
         stringstream ss(line);
         vector<int> row;
         int value;
-        while(ss >> value) {
+        while (ss >> value) {
             row.push_back(value);
         }
         matrix.push_back(row);
     }
 
-    int size = matrix.size();
+    int size = (int)matrix.size();
     for(int i=0; i<size; ++i) {
         for(int j=0; j<size; ++j) {
-            if(matrix[i][j] != 0 && i < j) {
+            if(matrix[i][j] != 0 && i<j) {
                 G.addEdge(i, j, matrix[i][j]);
             }
         }
@@ -85,13 +91,13 @@ void loadFile(const string& fileName, Graph &G) {
 }
 
 int calculateCost(const Graph &G, const vector<int> &flags, int node, int flag) {
+    // Same as task parallel
     int cost = 0;
-    const vector<pair<int,int>>& neighbors = G.getEdges(node);
-
-    for (const auto &neighbor : neighbors) {
-        int neighborNode = neighbor.first;
-        int weight = neighbor.second;
-        if (flags[neighborNode] != -1 && flags[neighborNode] != flag) {
+    const auto &neighbors = G.getEdges(node);
+    for (auto &nbr : neighbors) {
+        int nnode  = nbr.first;
+        int weight = nbr.second;
+        if (flags[nnode] != -1 && flags[nnode] != flag) {
             cost += weight;
         }
     }
@@ -103,119 +109,120 @@ int calculateCost(const Graph &G, const vector<int> &flags, int node, int flag) 
     return cost;
 }
 
-void branchAndBoundSerial(const Graph &G, vector<int> &flags, int index, int countA, int currentCost, int &bestCost)
+
+void resAlmostSeqSubTree(const Graph &G, vector<int> &flags, int index, int countA, int currentCost)
 {
-    if (currentCost >= bestCost) return;
-    if (countA > selA || countA + (V - index) < selA) return;
-
-    if (index == V) {
-        if (currentCost < bestCost) {
-            bestCost = currentCost;
-        }
-        return;
-    }
-
-    flags[index] = 0;
-    int costIncreaseA = calculateCost(G, flags, index, 0);
-    branchAndBoundSerial(G, flags, index + 1, countA + 1,
-                         currentCost + costIncreaseA, bestCost);
-
-    flags[index] = 1;
-    int costIncreaseB = calculateCost(G, flags, index, 1);
-    branchAndBoundSerial(G, flags, index + 1, countA,
-                         currentCost + costIncreaseB, bestCost);
-
-    flags[index] = -1;
-}
-
-
-static const int MAX_DEPTH_PARALLEL = 8;
-
-void branchAndBoundParallel(const Graph &G, vector<int> flags,
-                            int index, int countA, int currentCost, int &globalMinCost, int depth) {
-    int localMinCost;
-    #pragma omp atomic read
-    localMinCost = globalMinCost;
-
-    if (currentCost >= localMinCost) return;
-    if (countA > selA || countA + (V - index) < selA) return;
+    // almost same as task parallel
+    if (currentCost >= g_bestCost) return;
+    if (countA > selA || (countA + (V - index)) < selA) return;
 
     if (index == V) {
         #pragma omp critical
         {
-            if (currentCost < globalMinCost) {
-                globalMinCost = currentCost;
+            if (currentCost < g_bestCost) {
+                g_bestCost  = currentCost;
+                g_bestFlags = flags;
             }
         }
         return;
     }
 
-    if (depth < MAX_DEPTH_PARALLEL) {
-        flags[index] = 0;
-        int costA = calculateCost(G, flags, index, 0);
-        #pragma omp task default(none) \
-                         shared(G, globalMinCost) \
-                         firstprivate(flags, index, countA, currentCost, depth, costA)
-        {
-            branchAndBoundParallel(G, flags, index + 1,
-                                   countA + 1,
-                                   currentCost + costA,
-                                   globalMinCost,
-                                   depth + 1);
-        }
-
-        flags[index] = 1;
-        int costB = calculateCost(G, flags, index, 1);
-        #pragma omp task default(none) \
-                         shared(G, globalMinCost) \
-                         firstprivate(flags, index, countA, currentCost, depth, costB)
-        {
-            branchAndBoundParallel(G, flags, index + 1,
-                                   countA,
-                                   currentCost + costB,
-                                   globalMinCost,
-                                   depth + 1);
-        }
+    flags[index] = 0;
+    {
+        int cInc = calculateCost(G, flags, index, 0);
+        resAlmostSeqSubTree(G, flags, index + 1, countA + 1, currentCost + cInc);
     }
-    else {
-        flags[index] = 0;
-        int costA = calculateCost(G, flags, index, 0);
-        branchAndBoundSerial(G, flags, index + 1, countA + 1, currentCost + costA, globalMinCost);
 
-        flags[index] = 1;
-        int costB = calculateCost(G, flags, index, 1);
-        branchAndBoundSerial(G, flags, index + 1, countA, currentCost + costB, globalMinCost);
+    flags[index] = 1;
+    {
+        int cInc = calculateCost(G, flags, index, 1);
+        resAlmostSeqSubTree(G, flags, index + 1, countA, currentCost + cInc);
     }
-    #pragma omp taskwait
+
+    flags[index] = -1;
 }
 
+vector<BnBState> buildPartialStates(const Graph &G, int enoughStates, int maxDepth) {
+    vector<BnBState> result;
+    queue<BnBState> Q;
+
+    BnBState init;
+    init.flags  = vector<int>(V, -1);
+    init.index  = 0;
+    init.countA = 0;
+    init.cost   = 0;
+    Q.push(init);
+
+    while (!Q.empty()) {
+        BnBState s = Q.front();
+        Q.pop();
+
+        if (s.index >= maxDepth || s.index == V) {
+            result.push_back(s);
+        }
+        else {
+            {
+                BnBState s0 = s;
+                s0.flags[s0.index] = 0;
+                int cInc = calculateCost(G, s0.flags, s0.index, 0);
+                s0.cost   += cInc;
+                s0.countA += 1;
+                s0.index  += 1;
+                // Prune
+                if (s0.cost < g_bestCost && s0.countA <= selA) {
+                    Q.push(s0);
+                }
+            }
+
+            {
+                BnBState s1 = s;
+                s1.flags[s1.index] = 1;
+                int cInc = calculateCost(G, s1.flags, s1.index, 1);
+                s1.cost  += cInc;
+                s1.index += 1;
+                // Prune
+                if (s1.cost < g_bestCost) {
+                    Q.push(s1);
+                }
+            }
+        }
+
+        if ((int)result.size() >= enoughStates) break;
+    }
+
+    return result;
+}
 
 int main() {
-    V = 30;
-    selA = 15;
-
     Graph g(V);
     loadFile("data/graf_30_20.txt", g);
 
     g.printGraph();
 
-    vector<int> flags(V, -1);
-    int globalMinCost = numeric_limits<int>::max();
+    g_bestFlags.resize(V, -1);
 
     double start = omp_get_wtime();
 
-    #pragma omp parallel
-    {
-        #pragma omp single
-        {
-            branchAndBoundParallel(g, flags, 0, 0, 0, globalMinCost,0);
-        }
+    // BFS
+    int BFS_DEPTH = 8;
+    vector<BnBState> partialStates = buildPartialStates(g, ENOUGH_STATES, BFS_DEPTH);
+
+    cout << "Generated " << partialStates.size()
+         << " partial states from BFS.\n";
+
+    // recursion on each partial state
+    #pragma omp parallel for schedule(dynamic)
+    for (int i = 0; i < (int)partialStates.size(); i++) {
+        BnBState st = partialStates[i];
+        // weird result one time, so i created a local variable instead of directly passing st.flags
+        vector<int> localFlags = st.flags;
+        resAlmostSeqSubTree(g, localFlags, st.index, st.countA, st.cost);
     }
 
-    cout << "Minimum cut cost: " << globalMinCost << endl;
     double stop = omp_get_wtime();
-    double elapsed = stop - start;
-    printf("\nTime elapsed: %.5f\n", elapsed);
+
+    cout << "\nMinimum cut cost: " << g_bestCost << endl;
+    cout << "\nTime: " << (stop - start) << " seconds\n";
 
     return 0;
 }
