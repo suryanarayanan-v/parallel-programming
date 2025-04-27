@@ -21,13 +21,13 @@ vector<int> g_bestFlags;
 
 const int TAG_GRAPH_ADJ_SIZE = 10;
 const int TAG_GRAPH_ADJ_DATA = 11;
-const int TAG_GRAPH_COSTS    = 12;
-const int TAG_WORK_UNIT      = 13;
-const int TAG_RESULT         = 14;
-const int TAG_TERMINATE      = 15;
+const int TAG_GRAPH_COSTS = 12;
+const int TAG_WORK_UNIT = 13;
+const int TAG_RESULT = 14;
+const int TAG_TERMINATE = 15;
 const int TAG_BEST_COST_UPDATE = 16;
-const int TAG_REQUEST_FLAGS  = 17;
-const int TAG_FINAL_FLAGS    = 18;
+const int TAG_REQUEST_FLAGS = 17;
+const int TAG_FINAL_FLAGS = 18;
 
 
 class Graph {
@@ -374,10 +374,9 @@ int main(int argc, char *argv[]) {
     Graph g(V);
 
     double startTime = 0.0, endTime = 0.0;
-    int local_best_cost = numeric_limits<int>::max(); // Each process's view
+    int local_best_cost = numeric_limits<int>::max();
 
     if (rank == 0) {
-        cout << "MPI Branch and Bound Min-Cut Solver" << endl;
         cout << "V=" << V << ", selA=" << selA << endl;
         cout << "Running with " << size << " processes (1 Master, " << size - 1 << " Slaves)." << endl;
 
