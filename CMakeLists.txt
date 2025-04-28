@@ -8,7 +8,7 @@ add_executable(noparallel noparallel.cpp)
 add_executable(taskparallel taskparallel.cpp)
 add_executable(dataparallel dataparallelsim.cpp)
 add_executable(mpibnb mpibnb.cpp)
-add_executable(impmpi impmpi.cpp)
+add_executable(impmpi hybrid.cpp)
 
 find_package(OpenMP REQUIRED)
 find_package(MPI REQUIRED)
