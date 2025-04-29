@@ -1,0 +1,31 @@
+----------------------------------------------------
+Job started on: Tue Apr 29 01:21:44 CEST 2025
+Job name: hybrid12_n:4
+Job ID: 75202
+Nodes allocated: cf-prod-node-[041,044-046]
+Tasks per node: 1
+CPUs per task: 48
+Total tasks: 4
+----------------------------------------------------
+Activating Cray PE...
+Cray PE activated.
+Loading MPI module...
+MPI module loaded.
+Current modules:
+OMP_NUM_THREADS set to: 48
+MV2_ENABLE_AFFINITY set to 0
+Running application with srun...
+MPI World Size: 4
+OpenMP Max Threads (per process): 48
+Rank 0: Generated 256 partial states from BFS (Depth 8).
+Rank 0: Received and deserialized 64 states.
+
+Global Minimum cut cost: 18114 (found by rank 1)
+Best flags configuration (Rank 1): [ 0 1 0 0 1 1 1 1 1 1 1 0 0 0 1 1 1 0 1 0 1 1 1 1 1 0 0 1 1 0 1 0 ]
+
+Total Wall Time: 22.6253 seconds
+Max Local Computation Time: 22.6194 seconds
+----------------------------------------------------
+srun finished with exit code: 0
+Job finished on: Tue Apr 29 01:22:07 CEST 2025
+----------------------------------------------------
