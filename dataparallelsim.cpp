@@ -9,8 +9,8 @@
 
 using namespace std;
 
-int V = 30;
-int selA = 15;
+int V = 32;
+int selA = 12;
 int ENOUGH_STATES = 10000;
 
 
@@ -195,7 +195,7 @@ vector<BnBState> buildPartialStates(const Graph &G, int enoughStates, int maxDep
 
 int main() {
     Graph g(V);
-    loadFile("data/graf_30_20.txt", g);
+    loadFile("data/graf_32_25.txt", g);
 
     g.printGraph();
 

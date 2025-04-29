@@ -129,14 +129,14 @@ void branchAndBound(const Graph &G, vector<int> &flags, int index, int countA, i
     flags[index] = -1;
 }
 
-int main() {
-    V = 30;
+int main(int argc, char *argv[]) {
+    V = std::stoi(argv[1]);
+    selA = std::stoi(argv[2]);
     Graph g(V);
     vector<int> flags(V, -1);
     int minCost = numeric_limits<int>::max();
-    selA = 15;
-
-    loadFile("data/graf_30_20.txt", g);
+    std::string filename = argv[3];
+    loadFile(filename, g);
 
     g.printGraph();
 
